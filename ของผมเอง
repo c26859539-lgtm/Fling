@@ -1,0 +1,301 @@
+loadstring([[
+-- CASTX150 GUI for Studio testing only
+-- ใช้เพื่อการพัฒนา / ทดสอบใน Roblox Studio เท่านั้น — ห้ามใช้โกงผู้เล่นจริง
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- Config
+local MIN_VAL = 1
+local MAX_VAL = 1000
+local DEFAULT_SPEED = 16
+local DEFAULT_JUMP = 50
+
+local function clamp(v, a, b) return math.max(a, math.min(b, v)) end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CASTX150_GUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.new(0, 320, 0, 160)
+main.Position = UDim2.new(0, 10, 0, 10)
+main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+main.BackgroundTransparency = 0
+main.BorderSizePixel = 0
+main.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(0, 200, 0, 24)
+title.Position = UDim2.new(0, 6, 0, 6)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.Text = "CASTX150"
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+local function createSlider(parent, labelText, yOffset, default)
+	local container = Instance.new("Frame")
+	container.Name = labelText .. "_Container"
+	container.Size = UDim2.new(1, -12, 0, 44)
+	container.Position = UDim2.new(0, 6, 0, yOffset)
+	container.BackgroundTransparency = 1
+	container.Parent = parent
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(0.5, 0, 0, 20)
+	lbl.Position = UDim2.new(0, 0, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = labelText
+	lbl.TextColor3 = Color3.new(1,1,1)
+	lbl.Font = Enum.Font.SourceSans
+	lbl.TextSize = 14
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Parent = container
+
+	local valueLabel = Instance.new("TextLabel")
+	valueLabel.Size = UDim2.new(0.5, 0, 0, 20)
+	valueLabel.Position = UDim2.new(0.5, 0, 0, 0)
+	valueLabel.BackgroundTransparency = 1
+	valueLabel.Text = tostring(default)
+	valueLabel.TextColor3 = Color3.new(1,1,1)
+	valueLabel.Font = Enum.Font.SourceSans
+	valueLabel.TextSize = 14
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.Parent = container
+
+	local bar = Instance.new("Frame")
+	bar.Name = "Bar"
+	bar.Size = UDim2.new(1, 0, 0, 12)
+	bar.Position = UDim2.new(0, 0, 0, 22)
+	bar.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	bar.BorderSizePixel = 0
+	bar.Parent = container
+
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.new(0, 0, 1, 0)
+	fill.Position = UDim2.new(0, 0, 0, 0)
+	fill.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	fill.BorderSizePixel = 0
+	fill.Parent = bar
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.Position = UDim2.new(0, 0, 0, 0)
+	btn.BackgroundTransparency = 1
+	btn.Text = ""
+	btn.Parent = bar
+
+	local function posToValue(x)
+		local relative = clamp(x / bar.AbsoluteSize.X, 0, 1)
+		local val = math.floor(MIN_VAL + (MAX_VAL - MIN_VAL) * relative + 0.5)
+		return val, relative
+	end
+
+	local function updateValue(v)
+		local rel = (v - MIN_VAL) / (MAX_VAL - MIN_VAL)
+		fill.Size = UDim2.new(rel, 0, 1, 0)
+		valueLabel.Text = tostring(v)
+	end
+
+	updateValue(default)
+
+	local dragging = false
+	btn.MouseButton1Down:Connect(function()
+		dragging = true
+		local mouse = player:GetMouse()
+		local x = mouse.X - bar.AbsolutePosition.X
+		local val = posToValue(x)
+		updateValue(val)
+		btn.CaptureInput = true
+	end)
+	btn.MouseButton1Up:Connect(function()
+		dragging = false
+		btn.CaptureInput = false
+	end)
+	btn.MouseMoved:Connect(function(_, x)
+		if dragging then
+			local relX = x - bar.AbsolutePosition.X
+			local val = posToValue(relX)
+			updateValue(val)
+		end
+	end)
+	bar:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+	end)
+
+	return {
+		Container = container,
+		Get = function()
+			return tonumber(valueLabel.Text) or default
+		end,
+		Set = function(v)
+			v = clamp(math.floor(v+0.5), MIN_VAL, MAX_VAL)
+			updateValue(v)
+		end,
+		ValueLabel = valueLabel,
+		Fill = fill
+	}
+end
+
+local speedSlider = createSlider(main, "ความเร็ว (WalkSpeed)", 36, DEFAULT_SPEED)
+local jumpSlider = createSlider(main, "กระโดด (JumpPower)", 36 + 44, DEFAULT_JUMP)
+
+local aimToggleLabel = Instance.new("TextLabel")
+aimToggleLabel.Size = UDim2.new(0.6, 0, 0, 20)
+aimToggleLabel.Position = UDim2.new(0, 6, 0, 36 + 44*2)
+aimToggleLabel.BackgroundTransparency = 1
+aimToggleLabel.Text = "Aim Indicator"
+aimToggleLabel.TextColor3 = Color3.new(1,1,1)
+aimToggleLabel.Font = Enum.Font.SourceSans
+aimToggleLabel.TextSize = 14
+aimToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+aimToggleLabel.Parent = main
+
+local aimToggleBtn = Instance.new("TextButton")
+aimToggleBtn.Size = UDim2.new(0, 60, 0, 20)
+aimToggleBtn.Position = UDim2.new(1, -66, 0, 36 + 44*2)
+aimToggleBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+aimToggleBtn.TextColor3 = Color3.new(1,1,1)
+aimToggleBtn.Font = Enum.Font.SourceSans
+aimToggleBtn.TextSize = 14
+aimToggleBtn.Text = "Off"
+aimToggleBtn.Parent = main
+
+local aimEnabled = false
+aimToggleBtn.MouseButton1Click:Connect(function()
+	aimEnabled = not aimEnabled
+	aimToggleBtn.Text = aimEnabled and "On" or "Off"
+	aimToggleBtn.BackgroundColor3 = aimEnabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(70,70,70)
+end)
+
+local aimDot = Instance.new("Frame")
+aimDot.Name = "AimDot"
+aimDot.Size = UDim2.new(0, 8, 0, 8)
+aimDot.AnchorPoint = Vector2.new(0.5, 0.5)
+aimDot.BackgroundColor3 = Color3.fromRGB(255,50,50)
+aimDot.BorderSizePixel = 0
+aimDot.Visible = false
+aimDot.Parent = screenGui
+
+local function getTargets()
+	local list = {}
+	for _, obj in pairs(CollectionService:GetTagged("AimTarget")) do
+		if obj and obj:IsDescendantOf(workspace) then
+			table.insert(list, obj)
+		end
+	end
+	for _, model in pairs(workspace:GetDescendants()) do
+		if model:IsA("Model") and model:FindFirstChild("Humanoid") and model:FindFirstChild("HumanoidRootPart") then
+			local pl = Players:GetPlayerFromCharacter(model)
+			if not pl then
+				table.insert(list, model)
+			end
+		end
+	end
+	return list
+end
+
+local function findNearestTarget()
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+	local hrp = char.HumanoidRootPart
+	local candidates = getTargets()
+	local best, bestDist = nil, math.huge
+	for _, c in pairs(candidates) do
+		local part = c:FindFirstChild("HumanoidRootPart") or c.PrimaryPart
+		if part then
+			local d = (part.Position - hrp.Position).Magnitude
+			if d < bestDist then
+				bestDist = d
+				best = c
+			end
+		end
+	end
+	return best
+end
+
+local function applyMovementValues()
+	local char = player.Character
+	if not char then return end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		local speed = clamp(speedSlider.Get(), MIN_VAL, MAX_VAL)
+		local jump = clamp(jumpSlider.Get(), MIN_VAL, MAX_VAL)
+		pcall(function()
+			hum.WalkSpeed = speed
+			hum.JumpPower = jump
+		end)
+	end
+end
+
+player.CharacterAdded:Connect(function(char)
+	wait(0.1)
+	applyMovementValues()
+end)
+
+if player.Character then
+	applyMovementValues()
+end
+
+local lastSpeed, lastJump = nil, nil
+RunService.RenderStepped:Connect(function(dt)
+	local curSpeed = speedSlider.Get()
+	local curJump = jumpSlider.Get()
+	if curSpeed ~= lastSpeed or curJump ~= lastJump then
+		applyMovementValues()
+		lastSpeed = curSpeed
+		lastJump = curJump
+	end
+
+	if aimEnabled then
+		local target = findNearestTarget()
+		if target and target:FindFirstChild("HumanoidRootPart") then
+			local pos = target.HumanoidRootPart.Position
+			local screenPos, onScreen = camera:WorldToViewportPoint(pos)
+			if onScreen then
+				aimDot.Position = UDim2.new(0, screenPos.X, 0, screenPos.Y)
+				aimDot.Visible = true
+			else
+				aimDot.Visible = false
+			end
+		else
+			aimDot.Visible = false
+		end
+	else
+		aimDot.Visible = false
+	end
+end)
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -24, 0, 4)
+closeBtn.BackgroundColor3 = Color3.fromRGB(120, 20, 20)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 14
+closeBtn.Parent = main
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui.Enabled = false
+end)
+
+local info = Instance.new("TextLabel")
+info.Size = UDim2.new(1, -12, 0, 16)
+info.Position = UDim2.new(0, 6, 1, -20)
+info.BackgroundTransparency = 1
+info.Text = "อาจไม่สมบูร"
+info.TextColor3 = Color3.fromRGB(200,200,200)
+info.Font = Enum.Font.SourceSansItalic
+info.TextSize = 12
+info.TextXAlignment = Enum.TextXAlignment.Left
+info.Parent = main
+]])()
