@@ -1,0 +1,152 @@
+loadstring([[
+-- CASTX150 GUI "Hack" Script for Roblox
+-- This script can be executed via an executor or Script tab as a hack/cheat GUI.
+
+if not game or not game.Players or not game.Players.LocalPlayer then return end
+
+-- Remove previous GUI if exists
+pcall(function() game.Players.LocalPlayer.PlayerGui["CASTX150_GUI"]:Destroy() end)
+
+--// สร้าง GUI หลัก
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local HideButton = Instance.new("TextButton")
+
+local InvisibleButton = Instance.new("TextButton")
+local HeightBox = Instance.new("TextBox")
+local HeightConfirm = Instance.new("TextButton")
+local SpeedBox = Instance.new("TextBox")
+local SpeedConfirm = Instance.new("TextButton")
+
+ScreenGui.Name = "CASTX150_GUI"
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MainFrame.BorderSizePixel = 2
+MainFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
+MainFrame.Size = UDim2.new(0, 250, 0, 260)
+
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Size = UDim2.new(0, 200, 0, 30)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "CASTX150"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+HideButton.Parent = MainFrame
+HideButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+HideButton.Position = UDim2.new(0.85, 0, 0, 5)
+HideButton.Size = UDim2.new(0, 30, 0, 30)
+HideButton.Text = "-"
+HideButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+InvisibleButton.Parent = MainFrame
+InvisibleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+InvisibleButton.Position = UDim2.new(0.1, 0, 0.25, 0)
+InvisibleButton.Size = UDim2.new(0, 200, 0, 30)
+InvisibleButton.Text = "ล่องหน (กดเพื่อสลับ)"
+InvisibleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+HeightBox.Parent = MainFrame
+HeightBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+HeightBox.Position = UDim2.new(0.1, 0, 0.45, 0)
+HeightBox.Size = UDim2.new(0, 200, 0, 25)
+HeightBox.PlaceholderText = "ใส่ความสูง (1-100)"
+HeightBox.TextColor3 = Color3.new(1,1,1)
+
+HeightConfirm.Parent = MainFrame
+HeightConfirm.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+HeightConfirm.Position = UDim2.new(0.1, 0, 0.55, 0)
+HeightConfirm.Size = UDim2.new(0, 200, 0, 25)
+HeightConfirm.Text = "ตั้งค่าความสูง"
+HeightConfirm.TextColor3 = Color3.new(1,1,1)
+
+SpeedBox.Parent = MainFrame
+SpeedBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SpeedBox.Position = UDim2.new(0.1, 0, 0.70, 0)
+SpeedBox.Size = UDim2.new(0, 200, 0, 25)
+SpeedBox.PlaceholderText = "ความเร็วบิน (1-1000)"
+SpeedBox.TextColor3 = Color3.new(1,1,1)
+
+SpeedConfirm.Parent = MainFrame
+SpeedConfirm.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SpeedConfirm.Position = UDim2.new(0.1, 0, 0.80, 0)
+SpeedConfirm.Size = UDim2.new(0, 200, 0, 25)
+SpeedConfirm.Text = "ตั้งค่าความเร็วบิน"
+SpeedConfirm.TextColor3 = Color3.new(1,1,1)
+
+--// ฟังก์ชันซ่อน GUI
+HideButton.MouseButton1Click:Connect(function()
+	if MainFrame.Size.Y.Offset > 40 then
+		MainFrame.Size = UDim2.new(0, 60, 0, 40)
+		for _, v in pairs(MainFrame:GetChildren()) do
+			if v ~= HideButton and v ~= Title then
+				v.Visible = false
+			end
+		end
+	else
+		MainFrame.Size = UDim2.new(0, 250, 0, 260)
+		for _, v in pairs(MainFrame:GetChildren()) do
+			v.Visible = true
+		end
+	end
+end)
+
+--// โหมดล่องหน
+local invisible = false
+InvisibleButton.MouseButton1Click:Connect(function()
+	local player = game.Players.LocalPlayer
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		invisible = not invisible
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Transparency = invisible and 1 or 0
+				if part.Name == "Head" then
+					local face = part:FindFirstChildOfClass("Decal")
+					if face then
+						face.Transparency = invisible and 1 or 0
+					end
+				end
+			elseif part:IsA("Decal") then
+				part.Transparency = invisible and 1 or 0
+			end
+		end
+		-- Also hide accessories if wanted (optional)
+		for _, acc in pairs(player.Character:GetChildren()) do
+			if acc:IsA("Accessory") and acc:FindFirstChild("Handle") then
+				acc.Handle.Transparency = invisible and 1 or 0
+			end
+		end
+	end
+end)
+
+--// ตั้งค่าความสูง
+HeightConfirm.MouseButton1Click:Connect(function()
+	local player = game.Players.LocalPlayer
+	local height = tonumber(HeightBox.Text)
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and height then
+		height = math.clamp(height, 1, 100)
+		player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, height, 0)
+	end
+end)
+
+--// ตั้งค่าความเร็วบิน
+SpeedConfirm.MouseButton1Click:Connect(function()
+	local player = game.Players.LocalPlayer
+	local speed = tonumber(SpeedBox.Text)
+	if player.Character and player.Character:FindFirstChild("Humanoid") and speed then
+		speed = math.clamp(speed, 1, 1000)
+		player.Character.Humanoid.WalkSpeed = speed
+		player.Character.Humanoid.JumpPower = math.clamp(speed/2, 50, 150) -- Optional: boost jump
+	end
+end)
+
+--// Optional: always bring GUI to front
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+]])()
