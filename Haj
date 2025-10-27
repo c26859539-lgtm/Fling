@@ -1,0 +1,317 @@
+local src = [[
+-- CASTX150-V2.lua
+-- ใส่เป็น LocalScript (StarterPlayerScripts หรือ StarterGui)
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+-- Helper
+local function clamp(n, a, b) return math.max(a, math.min(b, n)) end
+-- GUI root
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CASTX150_V2_GUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = PlayerGui
+-- Main frame
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.new(0, 320, 0, 360)
+main.Position = UDim2.new(0, 10, 0, 10)
+main.BackgroundColor3 = Color3.fromRGB(20,20,20)
+main.BorderSizePixel = 0
+main.Parent = screenGui
+main.Active = true
+-- Title
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, 0, 0, 28)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "CASTX150-V2"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextYAlignment = Enum.TextYAlignment.Center
+title.Parent = main
+title.Padding = Instance.new("UIPadding", title)
+title.Padding.PaddingLeft = UDim.new(0,8)
+local playerLabel = Instance.new("TextLabel")
+playerLabel.Name = "PlayerLabel"
+playerLabel.Size = UDim2.new(1, -16, 0, 20)
+playerLabel.Position = UDim2.new(0, 8, 0, 34)
+playerLabel.BackgroundTransparency = 1
+playerLabel.TextColor3 = Color3.fromRGB(200,200,200)
+playerLabel.Font = Enum.Font.SourceSans
+playerLabel.TextSize = 14
+playerLabel.TextXAlignment = Enum.TextXAlignment.Left
+playerLabel.Text = "User: "..(LocalPlayer.Name or "Unknown").." (ID: "..tostring(LocalPlayer.UserId)..")"
+playerLabel.Parent = main
+local function makeLabel(y,text)
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, -16, 0, 18)
+	lbl.Position = UDim2.new(0, 8, 0, y)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = text
+	lbl.TextColor3 = Color3.fromRGB(200,200,200)
+	lbl.Font = Enum.Font.SourceSans
+	lbl.TextSize = 14
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Parent = main
+	return lbl
+end
+local function makeTextBox(y, placeholder)
+	local tb = Instance.new("TextBox")
+	tb.Size = UDim2.new(1, -16, 0, 24)
+	tb.Position = UDim2.new(0, 8, 0, y)
+	tb.PlaceholderText = placeholder or ""
+	tb.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	tb.TextColor3 = Color3.fromRGB(220,220,220)
+	tb.Font = Enum.Font.SourceSans
+	tb.TextSize = 14
+	tb.ClearTextOnFocus = false
+	tb.Parent = main
+	return tb
+end
+local function makeButton(y, text)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -16, 0, 26)
+	btn.Position = UDim2.new(0, 8, 0, y)
+	btn.Text = text
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 14
+	btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	btn.TextColor3 = Color3.fromRGB(240,240,240)
+	btn.Parent = main
+	return btn
+end
+makeLabel(62, "WalkSpeed (1 - 1000):")
+local speedBox = makeTextBox(82, "ใส่ตัวเลข 1-1000 แล้วกด Apply")
+local speedApply = makeButton(110, "Apply WalkSpeed")
+makeLabel(148, "JumpPower (1 - 1000):")
+local jumpBox = makeTextBox(168, "ใส่ตัวเลข 1-1000 แล้วกด Apply")
+local jumpApply = makeButton(196, "Apply JumpPower")
+local invisBtn = makeButton(232, "Toggle Invisible")
+makeLabel(268, "Teleport (พิมพ์ชื่อผู้เล่นหรือพิกัด x,y,z):")
+local tpBox = makeTextBox(288, "ใส่ชื่อผู้เล่น เช่น NotYourFriend หรือ 0,10,0")
+local tpToBtn = makeButton(316, "Teleport To Target")
+local tpBackBtn = makeButton(346, "Teleport Back")
+local hideBtn = Instance.new("TextButton")
+hideBtn.Name = "HideBtn"
+hideBtn.Size = UDim2.new(0, 80, 0, 28)
+hideBtn.Position = UDim2.new(1, -88, 0, 0)
+hideBtn.AnchorPoint = Vector2.new(0,0)
+hideBtn.Text = "ซ่อน"
+hideBtn.Font = Enum.Font.SourceSansBold
+hideBtn.TextSize = 14
+hideBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+hideBtn.TextColor3 = Color3.fromRGB(240,240,240)
+hideBtn.Parent = main
+local dragging = false
+local dragInput, dragStart, startPos
+local function updatePosition(input)
+	if not dragging then return end
+	local delta = input.Position - dragStart
+	main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+title.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput then
+		updatePosition(input)
+	end
+end)
+hideBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+hideBtn.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+local minimized = false
+local storedSize = main.Size
+local storedChildrenVisibility = {}
+local function setChildrenVisibility(vis)
+	for _,v in pairs(main:GetChildren()) do
+		if v ~= title and v ~= hideBtn and v.Parent == main then
+			v.Visible = vis
+		end
+	end
+end
+hideBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		main.Size = UDim2.new(0, 140, 0, 28)
+		setChildrenVisibility(false)
+		hideBtn.Text = "แสดง"
+	else
+		main.Size = storedSize
+		setChildrenVisibility(true)
+		hideBtn.Text = "ซ่อน"
+	end
+end)
+local function getCharacter()
+	return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+speedApply.MouseButton1Click:Connect(function()
+	local n = tonumber(speedBox.Text)
+	if not n then
+		speedBox.Text = ""
+		speedBox.PlaceholderText = "ต้องเป็นตัวเลขนะมึง"
+		return
+	end
+	n = clamp(math.floor(n), 1, 1000)
+	local char = getCharacter()
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = n
+	end
+	speedBox.PlaceholderText = "Applied: "..tostring(n)
+end)
+jumpApply.MouseButton1Click:Connect(function()
+	local n = tonumber(jumpBox.Text)
+	if not n then
+		jumpBox.Text = ""
+		jumpBox.PlaceholderText = "ต้องเป็นตัวเลขนะมึง"
+		return
+	end
+	n = clamp(math.floor(n), 1, 1000)
+	local char = getCharacter()
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.JumpPower = n
+	end
+	jumpBox.PlaceholderText = "Applied: "..tostring(n)
+end)
+local invisOn = false
+local storedTransparency = {}
+local storedCanCollide = {}
+local function setInvisible(on)
+	local char = getCharacter()
+	if not char then return end
+	for _,part in pairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			if on then
+				storedTransparency[part] = part.Transparency
+				storedCanCollide[part] = part.CanCollide
+				part.Transparency = 1
+				part.CanCollide = false
+			else
+				if storedTransparency[part] then
+					part.Transparency = storedTransparency[part]
+				else
+					part.Transparency = 0
+				end
+				if storedCanCollide[part] ~= nil then
+					part.CanCollide = storedCanCollide[part]
+				else
+					part.CanCollide = true
+				end
+			end
+		elseif part:IsA("Decal") or part:IsA("Accessory") then
+		end
+	end
+end
+invisBtn.MouseButton1Click:Connect(function()
+	invisOn = not invisOn
+	if invisOn then
+		setInvisible(true)
+		invisBtn.Text = "Invisible: ON"
+	else
+		setInvisible(false)
+		invisBtn.Text = "Invisible: OFF"
+	end
+end)
+local lastPosition = nil
+local function teleportToVector3(pos)
+	local char = getCharacter()
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		lastPosition = hrp.Position
+		hrp.CFrame = CFrame.new(pos)
+	end
+end
+local function findPlayerByName(name)
+	for _,p in pairs(Players:GetPlayers()) do
+		if p.Name:lower():sub(1,#name) == name:lower() then
+			return p
+		end
+	end
+	return nil
+end
+tpToBtn.MouseButton1Click:Connect(function()
+	local text = tpBox.Text
+	if not text or text == "" then
+		tpBox.PlaceholderText = "ใส่ชื่อผู้เล่นหรือพิกัด"
+		return
+	end
+	local x,y,z = text:match("([-0-9%.]+),%s*([-0-9%.]+),%s*([-0-9%.]+)")
+	if x and y and z then
+		local vx = tonumber(x); local vy = tonumber(y); local vz = tonumber(z)
+		if vx and vy and vz then
+			teleportToVector3(Vector3.new(vx,vy,vz))
+			tpBox.PlaceholderText = "Teleported to coords"
+			return
+		end
+	end
+	local target = findPlayerByName(text)
+	if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+		local pos = target.Character.HumanoidRootPart.Position + Vector3.new(0,3,0)
+		teleportToVector3(pos)
+		tpBox.PlaceholderText = "Teleported to "..target.Name
+		return
+	end
+	tpBox.PlaceholderText = "ไม่พบผู้เล่นหรือพิกัด"
+end)
+tpBackBtn.MouseButton1Click:Connect(function()
+	if lastPosition then
+		teleportToVector3(lastPosition)
+		tpBox.PlaceholderText = "Teleported back"
+		lastPosition = nil
+	else
+		tpBox.PlaceholderText = "ไม่มีตำแหน่งเก่าให้กลับ"
+	end
+end)
+LocalPlayer.CharacterAdded:Connect(function(char)
+	wait(0.5)
+	if invisOn then
+		storedTransparency = {}
+		storedCanCollide = {}
+		setInvisible(true)
+	end
+end)
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.RightShift then
+		screenGui.Enabled = not screenGui.Enabled
+	end
+end)
+print("CASTX150-V2 loaded for", LocalPlayer.Name)
+]]
+loadstring(src)()
