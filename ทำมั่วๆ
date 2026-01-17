@@ -1,0 +1,162 @@
+--// PURPLE MOVE SYSTEM
+--// By Io
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local Player = Players.LocalPlayer
+local Char = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid = Char:WaitForChild("Humanoid")
+local Root = Char:WaitForChild("HumanoidRootPart")
+
+--================ UI =================
+local gui = Instance.new("ScreenGui", Player.PlayerGui)
+gui.Name = "PurpleMoveUI"
+gui.ResetOnSpawn = false
+
+-- Main Frame
+local Main = Instance.new("Frame", gui)
+Main.Size = UDim2.new(0, 280, 0, 200)
+Main.Position = UDim2.new(0.5, -140, 0.5, -100)
+Main.BackgroundColor3 = Color3.fromRGB(35, 0, 55)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
+
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(190, 0, 255)
+Stroke.Thickness = 2
+Stroke.Transparency = 0.2
+
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Text = "💜 PURPLE MOVE"
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 22
+Title.TextColor3 = Color3.fromRGB(220,120,255)
+
+-- Minimize
+local MinBtn = Instance.new("TextButton", Main)
+MinBtn.Size = UDim2.new(0, 36, 0, 36)
+MinBtn.Position = UDim2.new(1, -42, 0, 6)
+MinBtn.Text = "–"
+MinBtn.Font = Enum.Font.GothamBlack
+MinBtn.TextSize = 26
+MinBtn.TextColor3 = Color3.new(1,1,1)
+MinBtn.BackgroundColor3 = Color3.fromRGB(140,0,210)
+MinBtn.BorderSizePixel = 0
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1,0)
+
+-- Bubble
+local Bubble = Instance.new("TextButton", gui)
+Bubble.Size = UDim2.new(0, 60, 0, 60)
+Bubble.Position = UDim2.new(0, 20, 0.5, -30)
+Bubble.Text = "โอ้"
+Bubble.Visible = false
+Bubble.Font = Enum.Font.GothamBlack
+Bubble.TextSize = 22
+Bubble.TextColor3 = Color3.new(1,1,1)
+Bubble.BackgroundColor3 = Color3.fromRGB(140,0,210)
+Bubble.BorderSizePixel = 0
+Bubble.Active = true
+Bubble.Draggable = true
+Instance.new("UICorner", Bubble).CornerRadius = UDim.new(1,0)
+
+-- Toggle Move
+local MoveBtn = Instance.new("TextButton", Main)
+MoveBtn.Size = UDim2.new(0, 200, 0, 40)
+MoveBtn.Position = UDim2.new(0.5, -100, 0, 55)
+MoveBtn.Text = "⚡ ENABLE MOVE"
+MoveBtn.Font = Enum.Font.GothamBold
+MoveBtn.TextSize = 18
+MoveBtn.TextColor3 = Color3.new(1,1,1)
+MoveBtn.BackgroundColor3 = Color3.fromRGB(110,0,170)
+MoveBtn.BorderSizePixel = 0
+Instance.new("UICorner", MoveBtn).CornerRadius = UDim.new(0,12)
+
+-- Speed Label
+local SpeedText = Instance.new("TextLabel", Main)
+SpeedText.Size = UDim2.new(1,0,0,30)
+SpeedText.Position = UDim2.new(0,0,0,105)
+SpeedText.BackgroundTransparency = 1
+SpeedText.Text = "Speed : 50"
+SpeedText.Font = Enum.Font.GothamBold
+SpeedText.TextSize = 16
+SpeedText.TextColor3 = Color3.fromRGB(220,120,255)
+
+-- Slider
+local SliderBG = Instance.new("Frame", Main)
+SliderBG.Size = UDim2.new(0, 200, 0, 8)
+SliderBG.Position = UDim2.new(0.5, -100, 0, 145)
+SliderBG.BackgroundColor3 = Color3.fromRGB(70,0,110)
+SliderBG.BorderSizePixel = 0
+Instance.new("UICorner", SliderBG).CornerRadius = UDim.new(1,0)
+
+local Slider = Instance.new("Frame", SliderBG)
+Slider.Size = UDim2.new(0.5, 0, 1, 0)
+Slider.BackgroundColor3 = Color3.fromRGB(180,0,255)
+Slider.BorderSizePixel = 0
+Instance.new("UICorner", Slider).CornerRadius = UDim.new(1,0)
+
+--================ MOVE SYSTEM =================
+local enabled = false
+local speed = 50
+local dragging = false
+
+RunService.RenderStepped:Connect(function()
+	if enabled then
+		local dir = Humanoid.MoveDirection
+		Root.AssemblyLinearVelocity =
+			Vector3.new(dir.X * speed, Root.AssemblyLinearVelocity.Y, dir.Z * speed)
+	end
+end)
+
+MoveBtn.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	MoveBtn.Text = enabled and "❌ DISABLE MOVE" or "⚡ ENABLE MOVE"
+end)
+
+-- Slider Logic
+SliderBG.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+	end
+end)
+
+UIS.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(i)
+	if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+		local pos = math.clamp(
+			(i.Position.X - SliderBG.AbsolutePosition.X) / SliderBG.AbsoluteSize.X,
+			0, 1
+		)
+		Slider.Size = UDim2.new(pos,0,1,0)
+		speed = math.floor(20 + (pos * 180))
+		SpeedText.Text = "Speed : "..speed
+	end
+end)
+
+--================ MINIMIZE =================
+MinBtn.MouseButton1Click:Connect(function()
+	Main.Visible = false
+	Bubble.Visible = true
+end)
+
+Bubble.MouseButton1Click:Connect(function()
+	Main.Visible = true
+	Bubble.Visible = false
+end)
+
+-- Open Anim
+Main.Size = UDim2.new(0,0,0,0)
+TweenService:Create(Main,TweenInfo.new(0.35,Enum.EasingStyle.Back),
+	{Size = UDim2.new(0,280,0,200)}):Play()
